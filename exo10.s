@@ -52,21 +52,30 @@ finvois1:
 	
 calcul:
 	@ entree: r1 = pointeur sur grille
-	stmfd sp !, {r1-r4}
+	stmfd sp !, {r1-r6, lr}
 	mov r2, r1
 	mov r3, #17
 	adr r4, population
-bclcalc:
-	cmp r3, #239
+	mov r5, #0
+bclcalc1:
+	cmp r5, #14
+	bhs fincalc1
+	mov r6, #0
+bclcalc2:
+	cmp r6, #14
+	bhs fincalc2
 	add r1, r2, r3
-	bhi fincalc
 	bl voisines
 	strb r0, [r4, r3]
 	add r3, r3, #1
-	b bclcalc
-fincalc:
-	ldmfd sp !, {r1-r4}
-	mov pc, lr
+	add r6, r6, #1
+	b bclcalc2
+fincalc2:
+	add r3, r3, #2
+	add r5, r5, #1
+	b bclcalc1
+fincalc1:
+	ldmfd sp !, {r1-r6, pc}
 
 _start:
 	adr r1, grille
