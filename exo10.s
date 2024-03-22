@@ -1,54 +1,48 @@
 .global _start
 
-grille:
-	.ascii "  o  o          "
-	.ascii "  ooo    ooo  o "
-	.ascii "o o     ooo o   "
-	.ascii "    o o o o o  o"
-	.ascii "o    ooo o      "
-	.ascii "       o oo     "
-	.ascii "     ooo        "
-	.ascii "       o  o o o "
-	.ascii " o   o     o    "
-	.ascii "o   oo ooo o    "
-	.ascii "o     oo        "
-	.ascii "     o   o     o"
-	.ascii "oo o  o     o o "
-	.ascii "    oo    o     "
+blinker:
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "     o          "
+  .ascii "    ooo         "
+  .ascii "     o          "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
+  .ascii "                "
 
 population: .fill 16*16, 1, 0
 .align
 
+
+tabvois: .byte -17, -16, -15, -1, 1, 15, 16, 17
+.align
+
 voisines:
 	@ entree: r1 = pointeur sur cellule
-	stmfd sp !, {r1-r8}
+	stmfd sp !, {r1-r5, lr}
 	mov r0, #0
-	mov r3, #-1
-	mov r7, #16
-bclvois1:
-	cmp r3, #1
-	bgt finvois1
-	mov r4, #-1
-bclvois2:
-	cmp r4, #1
-	bgt finvois2
-	mul r5, r4, r7
-	add r5, r5, r1
-	add r5, r5, r3
-	cmp r5, r1
-	beq saut
-	ldrb r8, [r5]
-	cmp r8, #'o'
-	addeq r0, #1
-saut:
-	add r4, r4, #1
-	b bclvois2
-finvois2:
+	adr r2, tabvois
+	mov r3, #0
+bclvois:
+	cmp r3, #8
+	bhs finvois
+	ldrsb r4, [r2, r3]
+	ldrb r5, [r1, r4]
+	cmp r5, #'o'
+	addeq r0, r0, #1
 	add r3, r3, #1
-	b bclvois1
-finvois1:
-	ldmfd sp !, {r1-r8}
-	mov pc, lr
+	b bclvois
+finvois:
+	ldmfd sp !, {r1-r5, pc}
+
 	
 calcul:
 	@ entree: r1 = pointeur sur grille
@@ -69,7 +63,7 @@ bclcalc2:
 	strb r0, [r4, r3]
 	add r3, r3, #1
 	add r6, r6, #1
-	b bclcalc2
+	b bclcalc2 
 fincalc2:
 	add r3, r3, #2
 	add r5, r5, #1
@@ -77,6 +71,52 @@ fincalc2:
 fincalc1:
 	ldmfd sp !, {r1-r6, pc}
 
-_start:
-	adr r1, grille
+
+generation:
+	@ entree: r1 = pointeur sur grille
+	stmfd sp !, {r2-r8, lr}
+	adr r2, population
 	bl calcul
+	mov r3, #17
+	mov r4, #0
+bclgen1:
+	cmp r4, #14
+	bhi fingen1
+	mov r5, #0
+bclgen2:
+	cmp r5, #14
+	bhi fingen2
+	ldrb r6, [r1, r3]
+	ldrb r7, [r2, r3]
+	cmp r6, #'o'
+	bne morte
+vivante:
+	cmp r7, #2
+	beq finmodif
+	cmp r7, #3
+	beq finmodif
+	mov r8, #' '
+	strb r8, [r1, r3]
+	b finmodif
+morte:
+	cmp r7, #3
+	bne finmodif
+	mov r8, #'o'
+	strb r8, [r1, r3]
+finmodif:
+	add r3, r3, #1
+	add r5, r5, #1
+	b bclgen2
+fingen2:
+	add r3, r3, #2
+	add r4, r4, #1
+	b bclgen1
+fingen1:
+	ldmfd sp !, {r2-r8, pc}
+
+
+_start:
+	adr r1, blinker
+bcl:
+	bl generation
+	b bcl
